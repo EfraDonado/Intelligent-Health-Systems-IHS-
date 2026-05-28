@@ -4,7 +4,7 @@ import Button from "./Button";
 import Badge from "./Badge";
 import ChatbotWidget from "./ChatbotWidget";
 import { cx } from "../utils/classNames";
-import { getCurrentUser, logout } from "../services/authService";
+import { DEMO_EMAIL, getCurrentUser, logout } from "../services/authService";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: DashboardIcon },
@@ -52,13 +52,13 @@ export default function AppLayout() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20 text-lg font-bold text-accent">
-                  S
+                  I
                 </div>
                 {!collapsed && (
                   <div>
-                    <p className="text-lg font-semibold">SaludIA</p>
+                    <p className="text-lg font-semibold">IHS</p>
                     <p className="text-xs text-muted">
-                      Sistema de Monitorizacion Inteligente
+                      Intelligent Health Systems
                     </p>
                   </div>
                 )}
@@ -93,7 +93,7 @@ export default function AppLayout() {
             </nav>
 
             <div className="mt-auto pt-6">
-              {!collapsed && currentUser?.email === "demo@saludia.app" && (
+              {!collapsed && currentUser?.email === DEMO_EMAIL && (
                 <div className="mb-3">
                   <Badge variant="neutral">Modo demo activo</Badge>
                 </div>
@@ -107,16 +107,16 @@ export default function AppLayout() {
           <div className="flex min-h-screen flex-1 flex-col">
             <header className="flex items-center justify-between border-b border-ink/10 bg-panel/95 px-4 py-4 md:px-8">
               <div>
-                <p className="text-xs uppercase text-muted">SaludIA</p>
+                <p className="text-xs uppercase text-muted">IHS</p>
                 <p className="text-[11px] text-muted">
-                  Sistema de Monitorizacion Inteligente
+                  Intelligent Health Systems
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-ink/80">
                   {currentUser?.name || "Invitado"}
                 </span>
-                {currentUser?.email === "demo@saludia.app" && (
+                {currentUser?.email === DEMO_EMAIL && (
                   <Badge variant="info">Demo</Badge>
                 )}
                 <Button variant="subtle" size="sm" onClick={handleLogout}>

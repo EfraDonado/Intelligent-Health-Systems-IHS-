@@ -6,9 +6,21 @@ const SOURCE_LABELS = {
   device: "Dispositivo",
   manual: "Manual",
   demo: "Demo",
+  api: "API",
 };
 
-export default function ReadingsTable({ readings, limit, thresholds, mode = "both" }) {
+function formatContext(context) {
+  if (!context) return "-";
+  const parts = [context.activity, context.stress].filter(Boolean);
+  const flags = context.flags
+    ? Object.entries(context.flags)
+        .filter(([, active]) => active)
+        .map(([key]) => key)
+    : [];
+  return [...parts, ...flags].join(" · ") || "-";
+}
+
+export default function ReadingsTable({ readings, limit, thresholds, highlightMetric = "hr" }) {
   const items = limit ? readings.slice(0, limit) : readings;
 
   if (!items.length) {
@@ -25,12 +37,11 @@ export default function ReadingsTable({ readings, limit, thresholds, mode = "bot
         <thead className="bg-ink/5 text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3">Fecha</th>
-            {(mode === "both" || mode === "hr") && (
-              <th className="px-4 py-3">HR</th>
-            )}
-            {(mode === "both" || mode === "temp") && (
-              <th className="px-4 py-3">Temp</th>
-            )}
+            <th className="px-4 py-3">HR</th>
+            <th className="px-4 py-3">Temp</th>
+            <th className="px-4 py-3">SpO2</th>
+            <th className="px-4 py-3">RR</th>
+            <th className="px-4 py-3">Contexto</th>
             <th className="px-4 py-3">Origen</th>
             <th className="px-4 py-3">Estado</th>
           </tr>
@@ -39,23 +50,35 @@ export default function ReadingsTable({ readings, limit, thresholds, mode = "bot
           {items.map((reading) => {
             const outOfRange =
               thresholds &&
-              ((mode !== "temp" &&
-                (reading.hr < thresholds.hrMin ||
-                  reading.hr > thresholds.hrMax)) ||
-                (mode !== "hr" &&
-                  (reading.temp < thresholds.tempMin ||
-                    reading.temp > thresholds.tempMax)));
+              (reading.hr < thresholds.hrMin ||
+                reading.hr > thresholds.hrMax ||
+                reading.temp < thresholds.tempMin ||
+                reading.temp > thresholds.tempMax ||
+                (reading.spo2 !== null && reading.spo2 < thresholds.spo2Min));
+
+            const highlight = (metric) =>
+              metric === highlightMetric ? "bg-accent/10 text-ink font-semibold" : "";
+
             return (
               <tr key={reading.id} className="border-t border-ink/10">
                 <td className="px-4 py-3 text-ink">
                   {formatDateTime(reading.timestampISO)}
                 </td>
-                {(mode === "both" || mode === "hr") && (
-                  <td className="px-4 py-3">{reading.hr} bpm</td>
-                )}
-                {(mode === "both" || mode === "temp") && (
-                  <td className="px-4 py-3">{reading.temp} C</td>
-                )}
+                <td className={`px-4 py-3 ${highlight("hr")}`}>
+                  {reading.hr ?? "-"} bpm
+                </td>
+                <td className={`px-4 py-3 ${highlight("temp")}`}>
+                  {reading.temp ?? "-"} C
+                </td>
+                <td className={`px-4 py-3 ${highlight("spo2")}`}>
+                  {reading.spo2 ?? "-"}%
+                </td>
+                <td className={`px-4 py-3 ${highlight("rr")}`}>
+                  {reading.rr ?? "-"}
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {formatContext(reading.context)}
+                </td>
                 <td className="px-4 py-3 text-muted">
                   {SOURCE_LABELS[reading.source] || "-"}
                 </td>

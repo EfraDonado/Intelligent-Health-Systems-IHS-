@@ -37,9 +37,9 @@ export default function Login() {
     <div className="min-h-screen bg-midnight bg-mesh px-4 py-10">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6">
         <div>
-          <Badge variant="info">SaludIA</Badge>
+          <Badge variant="info">IHS</Badge>
           <h1 className="mt-3 text-3xl font-semibold text-ink">
-            Sistema de Monitorizacion Inteligente
+            Intelligent Health Systems
           </h1>
           <p className="mt-2 text-sm text-muted">
             Accede a tu panel de salud y continua con tu seguimiento diario.

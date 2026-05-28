@@ -3,7 +3,7 @@ import { cx } from "../utils/classNames";
 const tabs = [
   { id: "help", label: "Ayuda" },
   { id: "wellness", label: "Bienestar" },
-  { id: "faq", label: "FAQ" },
+  { id: "faq", label: "FAQ Salud" },
 ];
 
 export default function ChatbotTabs({ value, onChange }) {

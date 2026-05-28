@@ -1,38 +1,41 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import AlertsList from "../components/AlertsList";
 import SectionTitle from "../components/SectionTitle";
 import { getCurrentUser } from "../services/authService";
-import { listByUser, markReviewed } from "../services/alertsService";
+import { useVitalsSource } from "../services/vitalsSource";
+
+const PARAMETER_FILTERS = [
+  { value: "all", label: "Todos" },
+  { value: "hr", label: "HR" },
+  { value: "temp", label: "Temp" },
+  { value: "spo2", label: "SpO2" },
+  { value: "trend", label: "Tendencias" },
+];
 
 export default function Alerts() {
   const user = getCurrentUser();
-  const [alerts, setAlerts] = useState([]);
+  const { alerts, source } = useVitalsSource(user?.id || "guest", {
+    autoStart: false,
+  });
   const [status, setStatus] = useState("all");
   const [parameter, setParameter] = useState("all");
-
-  const refresh = () => {
-    setAlerts(listByUser(user.id));
-  };
-
-  useEffect(() => {
-    refresh();
-  }, []);
 
   const filtered = useMemo(() => {
     return alerts.filter((alert) => {
       const matchStatus = status === "all" || alert.status === status;
-      const matchParam = parameter === "all" || alert.parameter === parameter;
+      const matchParam = parameter === "all" || alert.parameter === parameter || (parameter === "trend" && alert.kind === "trend");
       return matchStatus && matchParam;
     });
   }, [alerts, status, parameter]);
 
+  if (!user) return null;
+
   const handleReview = (id) => {
-    markReviewed(id);
-    refresh();
+    source.markAlertReviewed(id);
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-24">
       <SectionTitle
         title="Alertas"
         subtitle="Filtra y marca alertas como revisadas cuando termines."
@@ -55,16 +58,18 @@ export default function Alerts() {
           onChange={(event) => setParameter(event.target.value)}
           className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
         >
-          <option value="all">Todos</option>
-          <option value="hr">HR</option>
-          <option value="temp">Temp</option>
+          {PARAMETER_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
         </select>
       </div>
 
       <AlertsList alerts={filtered} onMarkReviewed={handleReview} />
 
       <p className="text-xs text-muted">
-        Recuerda: esto es apoyo, no diagnostico medico.
+        Recuerda: esto es apoyo, no diagnostico.
       </p>
     </div>
   );

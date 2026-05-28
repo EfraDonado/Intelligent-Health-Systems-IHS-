@@ -1,29 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "../components/Button";
 import DateRangeFilter from "../components/DateRangeFilter";
 import ReadingsChart from "../components/ReadingsChart";
 import ReadingsTable from "../components/ReadingsTable";
 import SectionTitle from "../components/SectionTitle";
 import { getCurrentUser } from "../services/authService";
-import { listByUser } from "../services/readingsService";
-import { getThresholds } from "../services/thresholdsService";
+import { useVitalsSource } from "../services/vitalsSource";
 import { isInRange } from "../utils/date";
 import { exportCSV, exportJSON } from "../utils/exporters";
 
+const METRICS = [
+  { value: "hr", label: "HR" },
+  { value: "temp", label: "Temp" },
+  { value: "spo2", label: "SpO2" },
+  { value: "rr", label: "RR" },
+];
+
 export default function History() {
   const user = getCurrentUser();
-  const [readings, setReadings] = useState([]);
-  const [thresholds, setThresholds] = useState(() =>
-    getThresholds(user.id)
-  );
+  const { readings, thresholds } = useVitalsSource(user?.id || "guest", {
+    autoStart: false,
+  });
   const [range, setRange] = useState({ start: "", end: "" });
-  const [parameter, setParameter] = useState("both");
+  const [metric, setMetric] = useState("hr");
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    setReadings(listByUser(user.id));
-    setThresholds(getThresholds(user.id));
-  }, []);
 
   const filtered = useMemo(() => {
     return readings.filter((reading) =>
@@ -31,10 +31,10 @@ export default function History() {
     );
   }, [readings, range]);
 
-  const chartMode = parameter === "both" ? "both" : parameter;
+  if (!user) return null;
 
   const handleExportJSON = () => {
-    exportJSON(`saludia-historial-${Date.now()}.json`, filtered);
+    exportJSON(`ihs-historial-${Date.now()}.json`, filtered);
     setMessage("Archivo JSON listo para descarga.");
   };
 
@@ -43,35 +43,37 @@ export default function History() {
       fecha: reading.timestampISO,
       hr: reading.hr,
       temp: reading.temp,
-      origen: reading.source,
+      spo2: reading.spo2,
+      rr: reading.rr,
+      activity: reading.context?.activity || "",
+      stress: reading.context?.stress || "",
+      source: reading.source,
     }));
-    exportCSV(`saludia-historial-${Date.now()}.csv`, rows);
+    exportCSV(`ihs-historial-${Date.now()}.csv`, rows);
     setMessage("Archivo CSV listo para descarga.");
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-24">
       <SectionTitle
         title="Historial de lecturas"
-        subtitle="Filtra por fecha o parametro para analizar tendencias."
+        subtitle="Filtra por fecha y centra la vista en la métrica que quieras revisar."
       />
 
       <div className="card-surface space-y-4 p-4">
-        <DateRangeFilter
-          start={range.start}
-          end={range.end}
-          onChange={setRange}
-        />
+        <DateRangeFilter start={range.start} end={range.end} onChange={setRange} />
         <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm text-muted">Parametro</label>
+          <label className="text-sm text-muted">Metrica</label>
           <select
-            value={parameter}
-            onChange={(event) => setParameter(event.target.value)}
+            value={metric}
+            onChange={(event) => setMetric(event.target.value)}
             className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
           >
-            <option value="both">HR + Temp</option>
-            <option value="hr">HR</option>
-            <option value="temp">Temp</option>
+            {METRICS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </select>
           <div className="ml-auto flex gap-2">
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
@@ -85,11 +87,11 @@ export default function History() {
         {message && <p className="text-xs text-accent">{message}</p>}
       </div>
 
-      <SectionTitle title="Grafica" />
-      <ReadingsChart readings={filtered} mode={chartMode} />
+      <SectionTitle title={`Grafica ${metric.toUpperCase()}`} />
+      <ReadingsChart readings={filtered} metric={metric} />
 
       <SectionTitle title="Tabla de lecturas" />
-      <ReadingsTable readings={filtered} thresholds={thresholds} mode={chartMode} />
+      <ReadingsTable readings={filtered} thresholds={thresholds} highlightMetric={metric} />
     </div>
   );
 }

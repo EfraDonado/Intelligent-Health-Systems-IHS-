@@ -19,7 +19,7 @@ function createWelcomeMessage() {
   return {
     id: nanoid(),
     role: "bot",
-    text: "Hola, soy el asistente de SaludIA. Puedo ayudarte con la app o con bienestar general.",
+    text: "Hola, soy IHSchat. Puedo ayudarte con la app o con bienestar general.",
   };
 }
 
@@ -31,18 +31,27 @@ export default function ChatbotWidget() {
     [user]
   );
 
+  // Estado principal del widget y memoria de conversacion.
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("help");
+  const [showAllFaqs, setShowAllFaqs] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState(() => {
     const stored = getJSON(storageKey, []);
     return stored.length ? stored : [createWelcomeMessage()];
   });
 
-  const quickChips = getQuickChips();
-  const faqs = getFaqs();
+  const activeCategory = activeTab === "faq" ? "wellness" : activeTab;
+  const quickChips = useMemo(
+    () => getQuickChips(activeCategory),
+    [activeCategory]
+  );
+  const faqs = useMemo(() => getFaqs(activeCategory), [activeCategory]);
+  const visibleFaqs = showAllFaqs ? faqs : faqs.slice(0, 6);
+  const canToggleFaqs = faqs.length > 6;
   const scrollRef = useRef(null);
 
+  // Guardamos el historial para que no se pierda la conversacion.
   useEffect(() => {
     setJSON(storageKey, messages);
   }, [messages, storageKey]);
@@ -51,6 +60,10 @@ export default function ChatbotWidget() {
     if (!open) return;
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open, activeTab]);
+
+  useEffect(() => {
+    setShowAllFaqs(false);
+  }, [activeTab]);
 
   if (!user) return null;
 
@@ -68,8 +81,7 @@ export default function ChatbotWidget() {
       text: content,
     };
 
-    const category = activeTab === "faq" ? "help" : activeTab;
-    const response = getBotResponse({ message: content, category });
+    const response = getBotResponse({ message: content, category: activeCategory });
     const botMessage = {
       id: nanoid(),
       role: "bot",
@@ -112,7 +124,7 @@ export default function ChatbotWidget() {
         <div className="mb-3 w-[340px] overflow-hidden rounded-2xl border border-ink/10 bg-panel shadow-soft md:w-[380px]">
           <div className="flex items-center justify-between border-b border-ink/10 bg-ink/5 px-4 py-3">
             <div className="flex items-center gap-2">
-              <Badge variant="info">Asistente SaludIA</Badge>
+              <Badge variant="info">IHSchat</Badge>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -132,25 +144,38 @@ export default function ChatbotWidget() {
             </div>
           </div>
 
+          {/* Bloque FAQ con scroll para no salir de la pantalla. */}
           <div className="space-y-3 px-4 py-3">
             <ChatbotTabs value={activeTab} onChange={setActiveTab} />
 
             {activeTab === "faq" && (
               <div className="grid gap-2">
-                {faqs.map((faq) => (
+                <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                  {visibleFaqs.map((faq) => (
+                    <button
+                      key={faq.id}
+                      type="button"
+                      onClick={() => handleFaqClick(faq)}
+                      className="w-full rounded-xl border border-ink/10 bg-ink/5 px-3 py-2 text-left text-xs text-ink/80 hover:bg-ink/10"
+                    >
+                      {faq.question}
+                    </button>
+                  ))}
+                </div>
+                {canToggleFaqs && (
                   <button
-                    key={faq.id}
                     type="button"
-                    onClick={() => handleFaqClick(faq)}
-                    className="rounded-xl border border-ink/10 bg-ink/5 px-3 py-2 text-left text-xs text-ink/80 hover:bg-ink/10"
+                    onClick={() => setShowAllFaqs((prev) => !prev)}
+                    className="text-left text-xs font-semibold text-ink/70 hover:text-ink"
                   >
-                    {faq.question}
+                    {showAllFaqs ? "Mostrar menos" : "Mostrar mas"}
                   </button>
-                ))}
+                )}
               </div>
             )}
           </div>
 
+          {/* Conversacion: mensajes del usuario y del bot. */}
           <div className="max-h-[280px] space-y-3 overflow-y-auto border-y border-ink/10 bg-white/70 px-4 py-3">
             {messages.map((message) => (
               <div
@@ -168,7 +193,7 @@ export default function ChatbotWidget() {
                       : "border border-ink/10 bg-white text-ink"
                   )}
                 >
-                  <p>{message.text}</p>
+                  <p className="whitespace-pre-line">{message.text}</p>
                   {message.disclaimer && (
                     <p className="mt-2 text-[11px] text-muted">
                       {message.disclaimer}

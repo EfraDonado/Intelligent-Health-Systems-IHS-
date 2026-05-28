@@ -3,22 +3,23 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import SectionTitle from "../components/SectionTitle";
 import { getCurrentUser } from "../services/authService";
-import {
-  getThresholds,
-  setThresholds,
-  validateThresholds,
-} from "../services/thresholdsService";
+import { useVitalsSource } from "../services/vitalsSource";
 import { formatDateTime } from "../utils/formatters";
 
 export default function Thresholds() {
   const user = getCurrentUser();
-  const [values, setValues] = useState(() => getThresholds(user.id));
+  const { thresholds, source } = useVitalsSource(user?.id || "guest", {
+    autoStart: false,
+  });
+  const [values, setValues] = useState(thresholds);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setValues(getThresholds(user.id));
-  }, []);
+    setValues(thresholds);
+  }, [thresholds]);
+
+  if (!user) return null;
 
   const handleChange = (event) => {
     setValues((prev) => ({ ...prev, [event.target.name]: event.target.value }));
@@ -26,7 +27,7 @@ export default function Thresholds() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const result = setThresholds(user.id, values);
+    const result = source.setThresholds(values);
     if (!result.ok) {
       setErrors(result.errors);
       setMessage("");
@@ -37,13 +38,11 @@ export default function Thresholds() {
     setValues(result.data);
   };
 
-  const validation = validateThresholds(values);
-
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-24">
       <SectionTitle
         title="Umbrales personalizados"
-        subtitle="Valores fuera de rango pueden generar alertas innecesarias."
+        subtitle="Si los haces muy bajos o muy altos, la app te puede avisar de mas."
       />
 
       <form className="card-surface grid gap-4 p-4" onSubmit={handleSubmit}>
@@ -93,11 +92,29 @@ export default function Thresholds() {
             error={errors.tempMax}
           />
         </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            label="SpO2 minima"
+            name="spo2Min"
+            type="number"
+            min="70"
+            max="100"
+            value={values.spo2Min}
+            onChange={handleChange}
+            error={errors.spo2Min}
+            helper="Valores fuera de rango pueden generar alertas innecesarias."
+          />
+          <div className="rounded-xl border border-ink/10 bg-ink/5 p-4 text-sm text-muted">
+            <p className="font-semibold text-ink">Consejo rapido</p>
+            <p className="mt-2">
+              Mantener estos valores dentro de un rango razonable ayuda a que las
+              alertas sean mas utiles y menos ruidosas.
+            </p>
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={!validation.ok}>
-            Guardar cambios
-          </Button>
+          <Button type="submit">Guardar cambios</Button>
           {message && <p className="text-xs text-accent">{message}</p>}
           {values.updatedAt && (
             <p className="text-xs text-muted">

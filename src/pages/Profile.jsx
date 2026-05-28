@@ -1,33 +1,30 @@
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import SectionTitle from "../components/SectionTitle";
 import { deleteAccount, getCurrentUser, logout } from "../services/authService";
-import { listByUser as listAlerts } from "../services/alertsService";
-import { listByUser as listReadings } from "../services/readingsService";
-import { getThresholds } from "../services/thresholdsService";
+import { useVitalsSource } from "../services/vitalsSource";
 import { exportJSON } from "../utils/exporters";
-import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
+  const user = getCurrentUser();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    setUser(getCurrentUser());
-  }, []);
+  const { readings, alerts, thresholds, reminder, mode, sourceLabel } = useVitalsSource(
+    user?.id || "guest",
+    { autoStart: false }
+  );
 
   if (!user) return null;
 
   const handleExport = () => {
-    const readings = listReadings(user.id);
-    const alerts = listAlerts(user.id);
-    const thresholds = getThresholds(user.id);
-    exportJSON(`saludia-datos-${user.id}.json`, {
+    exportJSON(`ihs-datos-${user.id}.json`, {
       user,
       readings,
       alerts,
       thresholds,
+      reminder,
+      sourceMode: mode,
+      sourceLabel,
     });
   };
 
@@ -42,10 +39,10 @@ export default function Profile() {
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-24">
       <SectionTitle
         title="Perfil"
-        subtitle="Gestiona tu cuenta y exporta datos rapidos."
+        subtitle="Gestiona tu cuenta y exporta tus datos locales cuando lo necesites."
       />
 
       <Card className="space-y-3">
@@ -57,14 +54,21 @@ export default function Profile() {
           <p className="text-xs text-muted">Correo</p>
           <p className="text-base text-ink">{user.email}</p>
         </div>
+        <div>
+          <p className="text-xs text-muted">Fuente activa</p>
+          <p className="text-base text-ink">{sourceLabel}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Recordatorio</p>
+          <p className="text-base text-ink">
+            {reminder.enabled ? `Cada ${reminder.everyHours} horas` : "Desactivado"}
+          </p>
+        </div>
       </Card>
 
       <div className="flex flex-wrap gap-3">
         <Button onClick={handleExport}>Exportar datos (JSON)</Button>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}
-        >
-          Volver al panel
-        </Button>
+        <Button variant="outline" onClick={() => navigate("/dashboard")}>Volver al panel</Button>
         <Button variant="danger" onClick={handleDelete}>
           Eliminar cuenta (simulado)
         </Button>

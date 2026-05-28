@@ -1,12 +1,62 @@
 import { nanoid } from "nanoid";
 import { getJSON, setJSON } from "./storage";
-import { create as createAlert } from "./alertsService";
+import { createThresholdAlerts } from "./alertsService";
 import { getThresholds } from "./thresholdsService";
 
 const READINGS_KEY = "readings";
 
+export const DEFAULT_READING_CONTEXT = {
+  activity: "reposo",
+  stress: "medio",
+  flags: {
+    cafe: false,
+    malaNoche: false,
+    medicacion: false,
+  },
+};
+
+function normalizeFlags(flags = {}) {
+  return {
+    cafe: Boolean(flags.cafe),
+    malaNoche: Boolean(flags.malaNoche),
+    medicacion: Boolean(flags.medicacion),
+  };
+}
+
+export function normalizeContext(context = {}) {
+  return {
+    activity: context.activity || DEFAULT_READING_CONTEXT.activity,
+    stress: context.stress || DEFAULT_READING_CONTEXT.stress,
+    flags: normalizeFlags(context.flags),
+  };
+}
+
+export function normalizeReading(reading = {}) {
+  return {
+    id: reading.id,
+    userId: reading.userId,
+    timestampISO: reading.timestampISO || new Date().toISOString(),
+    hr: reading.hr === null || reading.hr === undefined ? null : Number(reading.hr),
+    temp:
+      reading.temp === null || reading.temp === undefined
+        ? null
+        : Number(reading.temp),
+    spo2:
+      reading.spo2 === null || reading.spo2 === undefined
+        ? null
+        : Number(reading.spo2),
+    rr:
+      reading.rr === null || reading.rr === undefined
+        ? null
+        : Number(reading.rr),
+    source: reading.source || "device",
+    context: normalizeContext(reading.context),
+  };
+}
+
 export function listByUser(userId) {
   return getJSON(READINGS_KEY, [])
+    .map(normalizeReading)
     .filter((reading) => reading.userId === userId)
     .sort((a, b) => new Date(b.timestampISO) - new Date(a.timestampISO));
 }
@@ -30,24 +80,35 @@ export function createReading({
   userId,
   hr,
   temp,
+  spo2 = null,
+  rr = null,
   source,
   timestampISO,
   thresholds,
+  context,
+  autoAlerts = true,
 }) {
-  const reading = {
+  const reading = normalizeReading({
     id: nanoid(),
     userId,
     timestampISO: timestampISO || new Date().toISOString(),
-    hr: Number(hr),
-    temp: Number(temp),
+    hr,
+    temp,
+    spo2,
+    rr,
     source: source || "device",
-  };
+    context,
+  });
 
   const readings = getJSON(READINGS_KEY, []);
   setJSON(READINGS_KEY, [reading, ...readings]);
 
   const activeThresholds = thresholds || getThresholds(userId);
-  const alerts = createAlert(reading, activeThresholds);
+  const alerts = autoAlerts ? createThresholdAlerts(reading, activeThresholds) : [];
 
   return { reading, alerts };
+}
+
+export function getLatestByUser(userId) {
+  return listByUser(userId)[0] || null;
 }

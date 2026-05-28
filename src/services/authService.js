@@ -3,7 +3,8 @@ import { getJSON, remove, setJSON } from "./storage";
 
 const USERS_KEY = "users";
 const CURRENT_USER_KEY = "currentUser";
-const DEMO_EMAIL = "demo@saludia.app";
+export const DEMO_EMAIL = "demo@ihs.app";
+const LEGACY_DEMO_EMAIL = ["demo@", "sal", "udia.app"].join("");
 
 function normalizeEmail(email) {
   return email.trim().toLowerCase();
@@ -66,12 +67,28 @@ export function logout() {
 
 export function ensureDemoUser() {
   const users = getJSON(USERS_KEY, []);
-  const existing = users.find((user) => user.email === DEMO_EMAIL);
-  if (existing) return existing;
+  const existing = users.find(
+    (user) => user.email === DEMO_EMAIL || user.email === LEGACY_DEMO_EMAIL
+  );
+  if (existing) {
+    const normalized = {
+      ...existing,
+      name: "Demo IHS",
+      email: DEMO_EMAIL,
+    };
+    if (existing.email !== DEMO_EMAIL) {
+      setJSON(
+        USERS_KEY,
+        [normalized, ...users.filter((user) => user.id !== existing.id)]
+      );
+      return normalized;
+    }
+    return existing;
+  }
 
   const demoUser = {
     id: nanoid(),
-    name: "Demo SaludIA",
+    name: "Demo IHS",
     email: DEMO_EMAIL,
     password: "demo123",
     consent: true,

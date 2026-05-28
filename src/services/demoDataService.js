@@ -1,8 +1,26 @@
 import { getJSON, setJSON } from "./storage";
 import { createReading } from "./readingsService";
 import { getThresholds } from "./thresholdsService";
+import { generateRandomReading } from "../utils/random";
 
 const DEMO_SEED_KEY = "demoSeeded";
+
+function buildContext(index) {
+  const activities = ["reposo", "caminando", "ejercicio"];
+  const stresses = ["bajo", "medio", "alto"];
+  const activity = activities[index % activities.length];
+  const stress = activity === "reposo" ? stresses[index % 2] : stresses[(index + 1) % stresses.length];
+
+  return {
+    activity,
+    stress,
+    flags: {
+      cafe: index % 5 === 0,
+      malaNoche: index % 7 === 0,
+      medicacion: index % 9 === 0,
+    },
+  };
+}
 
 export function seedDemoData(userId) {
   const seeded = getJSON(DEMO_SEED_KEY, {});
@@ -11,25 +29,21 @@ export function seedDemoData(userId) {
   const thresholds = getThresholds(userId);
   const now = Date.now();
 
-  const samples = [
-    { hr: 72, temp: 36.6 },
-    { hr: 88, temp: 36.9 },
-    { hr: 96, temp: 37.2 },
-    { hr: 102, temp: 37.8 },
-    { hr: 110, temp: 38.2 },
-    { hr: 76, temp: 36.7 },
-    { hr: 98, temp: 37.4 },
-    { hr: 68, temp: 36.3 },
-  ];
-
-  samples.forEach((sample, index) => {
-    const timestampISO = new Date(now - index * 6 * 60 * 60 * 1000).toISOString();
+  Array.from({ length: 28 }).forEach((_, index) => {
+    const offsetHours = index * 6;
+    const timestampISO = new Date(now - offsetHours * 60 * 60 * 1000).toISOString();
+    const context = buildContext(index);
+    const scenario = index % 7 === 0 ? "alert" : "normal";
+    const vitals = generateRandomReading(thresholds, scenario, context);
     createReading({
       userId,
-      hr: sample.hr,
-      temp: sample.temp,
+      hr: vitals.hr,
+      temp: vitals.temp,
+      spo2: vitals.spo2,
+      rr: vitals.rr,
       source: "demo",
       timestampISO,
+      context,
       thresholds,
     });
   });

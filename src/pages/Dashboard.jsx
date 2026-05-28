@@ -9,161 +9,327 @@ import ReadingsChart from "../components/ReadingsChart";
 import SectionTitle from "../components/SectionTitle";
 import StatCard from "../components/StatCard";
 import { getCurrentUser } from "../services/authService";
-import { listByUser as listAlerts, countNew } from "../services/alertsService";
-import { generateRecommendations } from "../services/aiService";
-import { listByUser as listReadings, createReading } from "../services/readingsService";
-import { getThresholds } from "../services/thresholdsService";
-import { getJSON, setJSON } from "../services/storage";
-import { generateRandomReading } from "../utils/random";
+import { seedDemoData } from "../services/demoDataService";
+import { useVitalsSource } from "../services/vitalsSource";
 import { formatDateTime } from "../utils/formatters";
+
+function formatDelta(value, suffix = "") {
+  if (value === null || value === undefined) return "-";
+  const sign = value > 0 ? "+" : "";
+  const digits = suffix === "%" || suffix === "bpm" ? 0 : 1;
+  return `${sign}${Number(value).toFixed(digits)}${suffix}`;
+}
+
+const PRIORITY_LABELS = {
+  high: "Atencion",
+  medium: "Seguimiento",
+  low: "Sugerencia",
+};
+
+const PRIORITY_BADGES = {
+  high: "alert",
+  medium: "new",
+  low: "info",
+};
+
+function normalizeRecommendation(item, index) {
+  if (!item || typeof item === "string") {
+    return {
+      id: `rec-${index}`,
+      title: "Sugerencia",
+      summary: item || "",
+      steps: [],
+      priority: "low",
+      timeframe: "",
+    };
+  }
+
+  return {
+    id: item.id || `rec-${index}`,
+    title: item.title || "Sugerencia",
+    summary: item.summary || "",
+    steps: item.steps || [],
+    priority: item.priority || "low",
+    timeframe: item.timeframe || "",
+    followUp: item.followUp || "",
+  };
+}
 
 export default function Dashboard() {
   const user = getCurrentUser();
   const navigate = useNavigate();
-  const [readings, setReadings] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [thresholds, setThresholds] = useState(() =>
-    getThresholds(user.id)
-  );
-  const [connected, setConnected] = useState(() =>
-    getJSON("deviceConnected", false)
-  );
-
-  const refreshData = () => {
-    setReadings(listReadings(user.id));
-    setAlerts(listAlerts(user.id));
-    setThresholds(getThresholds(user.id));
-  };
+  const {
+    source,
+    latestReading,
+    recentReadings,
+    thresholds,
+    baseline,
+    baselineDelta,
+    reminder,
+    recommendations,
+    recommendationDisclaimer,
+    mode,
+    connected,
+    sourceLabel,
+    newAlertsCount,
+  } = useVitalsSource(user?.id || "guest", { autoStart: true });
+  const [reminderDraft, setReminderDraft] = useState({
+    enabled: reminder.enabled,
+    everyHours: reminder.everyHours,
+    note: reminder.note,
+  });
 
   useEffect(() => {
-    refreshData();
-  }, []);
-
-  useEffect(() => {
-    setJSON("deviceConnected", connected);
-  }, [connected]);
-
-  const handleGenerate = (mode) => {
-    const generated = generateRandomReading(thresholds, mode);
-    createReading({
-      userId: user.id,
-      hr: generated.hr,
-      temp: generated.temp,
-      source: "device",
+    setReminderDraft({
+      enabled: reminder.enabled,
+      everyHours: reminder.everyHours,
+      note: reminder.note,
     });
-    refreshData();
+  }, [reminder.enabled, reminder.everyHours, reminder.note]);
+
+  const handleGenerate = ({ scenario, context }) => {
+    source.generateAndStoreReading({
+      scenario,
+      context,
+      source: mode,
+    });
   };
 
-  const handleManualAdd = ({ hr, temp }) => {
-    createReading({ userId: user.id, hr, temp, source: "manual" });
-    refreshData();
+  const handleManualAdd = ({ hr, temp, spo2, rr, context }) => {
+    source.addManualReading({
+      hr,
+      temp,
+      spo2,
+      rr,
+      context,
+    });
   };
 
-  const lastReading = readings[0];
-  const newAlerts = countNew(user.id);
+  const handleLoadDemo = () => {
+    seedDemoData(user.id);
+    source.refresh();
+  };
 
-  const recommendations = useMemo(
-    () => generateRecommendations(readings, alerts, thresholds),
-    [readings, alerts, thresholds]
-  );
+  const handleReminderSave = () => {
+    source.setReminder(reminderDraft);
+  };
+
+  const baselineSummary = useMemo(() => {
+    if (!baseline?.samples) {
+      return "Aun no hay suficientes lecturas en reposo para crear tu linea base.";
+    }
+
+    return `HR ${baseline.hr.avg?.toFixed(0) || "-"} bpm · Temp ${baseline.temp.avg?.toFixed(1) || "-"} C · SpO2 ${baseline.spo2.avg?.toFixed(0) || "-"}%`;
+  }, [baseline]);
+
+  if (!user) return null;
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm text-muted">Hola, {user.name}</p>
           <h1 className="text-2xl font-semibold text-ink">
-            Resumen de tu salud hoy
+            Resumen de tu seguimiento hoy
           </h1>
+          <p className="text-sm text-muted">
+            Fuente activa: {sourceLabel} · {connected ? "conectada" : "detenida"}
+          </p>
         </div>
-        <Badge variant={connected ? "normal" : "alert"}>
-          {connected ? "Dispositivo conectado" : "Dispositivo desconectado"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={connected ? "normal" : "alert"}>
+            {connected ? "Fuente activa" : "Fuente detenida"}
+          </Badge>
+          <Badge variant="info">Alertas nuevas: {newAlertsCount}</Badge>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {reminder.due && (
+        <Card className="border-accent/25 bg-accent/5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">Recordatorio suave</p>
+              <p className="text-sm text-muted">
+                {reminder.message || "Ya toca registrar una lectura nueva."}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => source.acknowledgeReminder()}>
+              Ya lo vi
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Ultima lectura"
-          value={
-            lastReading
-              ? `${lastReading.hr} bpm / ${lastReading.temp} C`
-              : "Sin datos"
-          }
-          hint={
-            lastReading
-              ? `Actualizado ${formatDateTime(lastReading.timestampISO)}`
-              : "Aun no hay lecturas"
-          }
+          value={latestReading ? `${latestReading.hr ?? "-"} bpm` : "Sin datos"}
+          hint={latestReading ? `Temp ${latestReading.temp ?? "-"} C · SpO2 ${latestReading.spo2 ?? "-"}%` : "Aun no hay lecturas"}
         />
         <StatCard
-          label="Alertas nuevas"
-          value={newAlerts}
-          hint="Revisa alertas para marcar como revisadas"
-          badge={<Badge variant={newAlerts ? "new" : "reviewed"}>Live</Badge>}
+          label="Temperatura"
+          value={latestReading?.temp !== null && latestReading?.temp !== undefined ? `${latestReading.temp} C` : "-"}
+          hint={latestReading ? `Actualizado ${formatDateTime(latestReading.timestampISO)}` : ""}
         />
         <StatCard
-          label="Umbrales activos"
-          value={`${thresholds.hrMin}-${thresholds.hrMax} bpm / ${thresholds.tempMin}-${thresholds.tempMax} C`}
-          hint="Puedes ajustarlos en la seccion Umbrales"
+          label="SpO2"
+          value={latestReading?.spo2 !== null && latestReading?.spo2 !== undefined ? `${latestReading.spo2}%` : "-"}
+          hint={latestReading?.spo2 !== null && latestReading?.spo2 !== undefined ? `Minimo sugerido ${thresholds.spo2Min}%` : "La lectura aun no trae oxigenacion"}
+        />
+        <StatCard
+          label="RR estimada"
+          value={latestReading?.rr !== null && latestReading?.rr !== undefined ? `${latestReading.rr} rpm` : "No disponible"}
+          hint="En modo API puede venir vacia sin romper la vista"
         />
       </div>
 
       <SectionTitle
-        title="Guia rapida"
-        subtitle="Si es tu primera vez, aqui tienes un resumen sencillo."
+        title="Linea base de 7 dias"
+        subtitle="Solo usa lecturas en reposo para que la comparacion sea mas justa."
+        action={
+          <Badge variant="neutral">
+            {baseline?.samples ? `${baseline.samples} muestras` : "Sin linea base aun"}
+          </Badge>
+        }
       />
-      <Card className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm text-ink/80">
-            Aprende en 2 minutos: como generar lecturas, revisar alertas y crear
-            reportes.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/manual")}
-        >
-          Abrir manual
-        </Button>
+      <Card className="space-y-3">
+        <p className="text-sm text-ink/80">{baselineSummary}</p>
+        {baselineDelta && (
+          <div className="grid gap-2 text-sm text-muted md:grid-cols-4">
+            <span>HR vs base: {formatDelta(baselineDelta.hr, "bpm")}</span>
+            <span>Temp vs base: {formatDelta(baselineDelta.temp, " C")}</span>
+            <span>SpO2 vs base: {formatDelta(baselineDelta.spo2, "%")}</span>
+            <span>RR vs base: {formatDelta(baselineDelta.rr, " rpm")}</span>
+          </div>
+        )}
       </Card>
 
       <SectionTitle
-        title="Simulador"
-        subtitle="Conecta tu dispositivo o usa el simulador para generar lecturas."
+        title="Simulador y captura"
+        subtitle="Conecta la fuente, genera una lectura o carga datos demo para practicar."
       />
       <DeviceSimulator
         connected={connected}
-        onToggle={() => setConnected((prev) => !prev)}
+        onToggle={() => source.toggleConnected()}
         onGenerate={handleGenerate}
         onManualAdd={handleManualAdd}
         thresholds={thresholds}
+        sourceMode={mode}
+        onModeChange={(nextMode) => source.setMode(nextMode)}
       />
+
+      <div className="flex flex-wrap gap-3">
+        <Button variant="outline" onClick={handleLoadDemo}>
+          Cargar datos demo
+        </Button>
+        <Button variant="ghost" onClick={() => navigate("/manual")}>Abrir manual</Button>
+      </div>
+
+      <SectionTitle
+        title="Recordatorios"
+        subtitle="Una ayuda simple para no dejar pasar mucho tiempo entre lecturas."
+      />
+      <Card className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-2 text-sm text-muted">
+            Activar recordatorio
+            <select
+              value={String(reminderDraft.enabled)}
+              onChange={(event) =>
+                setReminderDraft((prev) => ({
+                  ...prev,
+                  enabled: event.target.value === "true",
+                }))
+              }
+              className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
+            >
+              <option value="false">No</option>
+              <option value="true">Si</option>
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Cada cuantas horas
+            <input
+              type="number"
+              min="1"
+              max="24"
+              value={reminderDraft.everyHours}
+              onChange={(event) =>
+                setReminderDraft((prev) => ({
+                  ...prev,
+                  everyHours: event.target.value,
+                }))
+              }
+              className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Mensaje corto
+            <input
+              value={reminderDraft.note}
+              onChange={(event) =>
+                setReminderDraft((prev) => ({
+                  ...prev,
+                  note: event.target.value,
+                }))
+              }
+              className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={handleReminderSave}>Guardar recordatorio</Button>
+          <p className="text-xs text-muted">
+            Si se cumple el tiempo, veras una banda interna para recordarte la lectura.
+          </p>
+        </div>
+      </Card>
 
       <SectionTitle
         title="Lecturas recientes"
-        subtitle="Ultimas 5 lecturas registradas."
+        subtitle="Ultimas 5 lecturas registradas con contexto y oxigenacion."
       />
-      <ReadingsTable readings={readings} limit={5} thresholds={thresholds} />
+      <ReadingsTable readings={recentReadings} limit={5} thresholds={thresholds} highlightMetric="hr" />
 
       <SectionTitle
         title="Tendencia rapida"
-        subtitle="Vista compacta de tus lecturas mas recientes."
+        subtitle="Una vista simple para seguir la lectura que quieras revisar primero."
       />
-      <ReadingsChart readings={readings} />
+      <ReadingsChart readings={recentReadings} metric="hr" />
 
       <SectionTitle title="Recomendaciones" />
       <div className="grid gap-3">
-        {recommendations.map((tip, index) => (
-          <div
-            key={index}
-            className="card-surface flex items-center gap-3 px-4 py-3"
-          >
-            <span className="text-sm text-ink">{tip}</span>
-          </div>
-        ))}
+        {(recommendations || []).map((item, index) => {
+          const rec = normalizeRecommendation(item, index);
+          return (
+            <div key={rec.id} className="card-surface space-y-2 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-ink">{rec.title}</p>
+                {rec.priority && (
+                  <Badge variant={PRIORITY_BADGES[rec.priority] || "neutral"}>
+                    {PRIORITY_LABELS[rec.priority] || "Info"}
+                  </Badge>
+                )}
+              </div>
+              {rec.summary && <p className="text-sm text-ink/80">{rec.summary}</p>}
+              {rec.steps?.length > 0 && (
+                <ol className="list-decimal space-y-1 pl-5 text-sm text-ink/80">
+                  {rec.steps.map((step, stepIndex) => (
+                    <li key={stepIndex}>{step}</li>
+                  ))}
+                </ol>
+              )}
+              {rec.timeframe && (
+                <p className="text-xs text-muted">Cuando: {rec.timeframe}</p>
+              )}
+              {rec.followUp && (
+                <p className="text-xs text-muted">Si continua: {rec.followUp}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
-
-      <p className="text-xs text-muted">
-        Apoyo informativo, no diagnostico medico.
-      </p>
+      <p className="text-xs text-muted">{recommendationDisclaimer || "Apoyo informativo, no diagnostico."}</p>
     </div>
   );
 }

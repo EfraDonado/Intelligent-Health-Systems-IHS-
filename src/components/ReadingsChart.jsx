@@ -10,21 +10,37 @@ import {
 import Card from "./Card";
 import { formatTime } from "../utils/formatters";
 
-export default function ReadingsChart({ readings, mode = "both" }) {
+const METRIC_LABELS = {
+  hr: "HR",
+  temp: "Temp",
+  spo2: "SpO2",
+  rr: "RR",
+};
+
+const METRIC_COLORS = {
+  hr: "#2563EB",
+  temp: "#22C55E",
+  spo2: "#0EA5E9",
+  rr: "#7C3AED",
+};
+
+export default function ReadingsChart({ readings, metric = "hr" }) {
   const data = [...readings]
     .slice(0, 12)
     .reverse()
     .map((reading) => ({
       time: formatTime(reading.timestampISO),
-      hr: reading.hr,
-      temp: reading.temp,
-    }));
+      value: reading[metric],
+    }))
+    .filter((item) => item.value !== null && item.value !== undefined);
+
+  const label = METRIC_LABELS[metric] || METRIC_LABELS.hr;
 
   if (!data.length) {
     return (
       <Card className="flex min-h-[220px] items-center justify-center">
         <p className="text-sm text-muted">
-          Aun no hay lecturas, genera una para empezar.
+          Aun no hay datos para {label}. Prueba con una lectura nueva.
         </p>
       </Card>
     );
@@ -45,26 +61,14 @@ export default function ReadingsChart({ readings, mode = "both" }) {
               color: "#0F172A",
             }}
           />
-          {(mode === "both" || mode === "hr") && (
-            <Line
-              type="monotone"
-              dataKey="hr"
-              stroke="#2563EB"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              activeDot={{ r: 5 }}
-            />
-          )}
-          {(mode === "both" || mode === "temp") && (
-            <Line
-              type="monotone"
-              dataKey="temp"
-              stroke="#22C55E"
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              activeDot={{ r: 5 }}
-            />
-          )}
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={METRIC_COLORS[metric] || METRIC_COLORS.hr}
+            strokeWidth={2}
+            dot={{ r: 2 }}
+            activeDot={{ r: 5 }}
+          />
         </LineChart>
       </ResponsiveContainer>
     </Card>

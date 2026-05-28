@@ -6,6 +6,8 @@ import { formatDateTime } from "../utils/formatters";
 const PARAM_LABEL = {
   hr: "HR",
   temp: "Temp",
+  spo2: "SpO2",
+  trend: "Tendencia",
 };
 
 export default function AlertsList({ alerts, onMarkReviewed, readOnly = false }) {
@@ -24,14 +26,21 @@ export default function AlertsList({ alerts, onMarkReviewed, readOnly = false })
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-ink">
-                {PARAM_LABEL[alert.parameter] || "Parametro"} fuera de rango
+                {PARAM_LABEL[alert.parameter] || "Parametro"}
               </p>
-              <Badge variant={alert.status === "new" ? "new" : "reviewed"}>
-                {alert.status === "new" ? "Nueva" : "Revisada"}
+              <Badge variant={alert.kind === "trend" ? "info" : alert.status === "new" ? "new" : "reviewed"}>
+                {alert.kind === "trend"
+                  ? "Tendencia"
+                  : alert.status === "new"
+                    ? "Nueva"
+                    : "Revisada"}
               </Badge>
+              {alert.severity === "warning" && <Badge variant="alert">Importante</Badge>}
             </div>
             <p className="text-xs text-muted">
-              Valor {alert.value} | Rango {alert.min}-{alert.max}
+              {alert.kind === "trend"
+                ? alert.note || "Tendencia detectada en lecturas recientes."
+                : `Valor ${alert.value} | Rango ${alert.min}-${alert.max}`}
             </p>
           </div>
           <div className="text-xs text-muted">
