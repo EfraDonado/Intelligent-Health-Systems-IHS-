@@ -41,29 +41,33 @@ export default function Alerts() {
         subtitle="Filtra y marca alertas como revisadas cuando termines."
       />
 
-      <div className="card-surface flex flex-wrap items-center gap-3 p-4">
-        <label className="text-sm text-muted">Estado</label>
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
-        >
-          <option value="all">Todas</option>
-          <option value="new">Nuevas</option>
-          <option value="reviewed">Revisadas</option>
-        </select>
-        <label className="ml-4 text-sm text-muted">Parametro</label>
-        <select
-          value={parameter}
-          onChange={(event) => setParameter(event.target.value)}
-          className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
-        >
-          {PARAMETER_FILTERS.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
+      <div className="card-surface grid gap-3 p-4 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm text-muted">
+          Estado
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
+          >
+            <option value="all">Todas</option>
+            <option value="new">Nuevas</option>
+            <option value="reviewed">Revisadas</option>
+          </select>
+        </label>
+        <label className="grid gap-2 text-sm text-muted">
+          Parametro
+          <select
+            value={parameter}
+            onChange={(event) => setParameter(event.target.value)}
+            className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
+          >
+            {PARAMETER_FILTERS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <AlertsList alerts={filtered} onMarkReviewed={handleReview} />

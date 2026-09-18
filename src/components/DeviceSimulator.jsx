@@ -70,7 +70,7 @@ export default function DeviceSimulator({
 
   return (
     <Card className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-base font-semibold text-ink">
             Simulador de lectura
@@ -82,7 +82,7 @@ export default function DeviceSimulator({
         <button
           type="button"
           onClick={onToggle}
-          className="flex items-center gap-3 rounded-full border border-ink/10 bg-ink/5 px-3 py-2 text-sm text-ink/70 transition hover:bg-ink/10"
+          className="flex w-full items-center gap-3 rounded-full border border-ink/10 bg-ink/5 px-3 py-2 text-sm text-ink/70 transition hover:bg-ink/10 sm:w-auto"
         >
           <span
             className={`h-2.5 w-2.5 rounded-full ${
@@ -118,7 +118,7 @@ export default function DeviceSimulator({
         </div>
       </div>
 
-      <div className="rounded-xl border border-ink/10 bg-white p-3 space-y-4">
+      <div className="space-y-4 rounded-xl border border-ink/10 bg-white p-3">
         <div className="grid gap-3 md:grid-cols-4">
           <Input
             label="HR (bpm)"
@@ -201,11 +201,11 @@ export default function DeviceSimulator({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleGenerate} disabled={!connected}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button onClick={handleGenerate} disabled={!connected} className="w-full sm:w-auto">
             Generar lectura
           </Button>
-          <Button type="button" variant="outline" onClick={handleManualSubmit}>
+          <Button type="button" variant="outline" onClick={handleManualSubmit} className="w-full sm:w-auto">
             Guardar manual
           </Button>
           <p className="text-xs text-muted">

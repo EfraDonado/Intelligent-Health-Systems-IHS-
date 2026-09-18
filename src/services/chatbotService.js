@@ -1,5 +1,18 @@
 import { normalizeText } from "../utils/textNormalize";
 
+// Comentarios humanizados para desarrolladores y mantenedores:
+// Este archivo implementa un chatbot regla- basado (sin IA) para IHS.
+// Puntos importantes:
+// - Hay dos familias de respuestas: `help` (ayuda sobre la app) y
+//   `wellness` (consejos generales de bienestar). Las intenciones
+//   (intents) se definen abajo como arrays con `keywords` y `answer`.
+// - La deteccion de emergencia es sencilla: busca palabras/frases clave
+//   que sugieran riesgo inmediato y devuelve un aviso claro para buscar
+//   ayuda presencial. Esto no reemplaza juicio medico.
+// - Para agregar una nueva intencion: copiar un objeto de `HELP_INTENTS`
+//   o `WELLNESS_INTENTS`, elegir un `id`, `keywords` cortos y un `answer`
+//   que sea conciso y accionable. Las `quickActions` pueden enlazar rutas.
+
 const WELLNESS_DISCLAIMER = "No reemplaza atencion medica.";
 
 // Palabras clave base para temas de salud y situaciones urgentes.
@@ -234,11 +247,11 @@ const WELLNESS_INTENTS = [
   },
   {
     id: "well_sleep",
-    title: "Sueno",
+    title: "Sueño",
     category: "wellness",
-    keywords: ["sueno", "dormir", "descanso", "insomnio"],
+    keywords: ["sueño", "dormir", "descanso", "insomnio"],
     answer:
-      "Busca un horario regular de sueno. Evita pantallas y cafeina antes de dormir.",
+      "Busca un horario regular de sueño. Evita pantallas y cafeina antes de dormir.",
   },
   {
     id: "well_stress",
@@ -396,16 +409,19 @@ const FALLBACK_HELP = {
 };
 
 const FALLBACK_WELLNESS = {
-  text: "Puedo darte consejos generales de bienestar. Prueba con hidratacion, sueno o estres.",
+  text: "Puedo darte consejos generales de bienestar. Prueba con hidratacion, sueño o estres.",
   suggestions: [
     { label: "Hidratacion", message: "Consejos de hidratacion" },
-    { label: "Sueno", message: "Consejos de sueno" },
+    { label: "Sueño", message: "Consejos de sueño" },
     { label: "Estres", message: "Como bajar el estres" },
     { label: "Actividad", message: "Actividad ligera" },
   ],
   disclaimer: WELLNESS_DISCLAIMER,
 };
 
+// scoreIntent: calcula una puntuacion sencilla para una intent
+// sumando 1 por cada palabra clave que aparezca en el mensaje.
+// Esta simplicidad facilita entender por que una respuesta fue elegida.
 function scoreIntent(normalizedMessage, intent) {
   return intent.keywords.reduce((score, keyword) => {
     const normalizedKeyword = normalizeText(keyword);
@@ -413,12 +429,16 @@ function scoreIntent(normalizedMessage, intent) {
   }, 0);
 }
 
+// includesAny: helper para chequear listas de palabras cortas
+// (saludos, agradecimientos, etc.). Devuelve true si alguna coincide.
 function includesAny(normalizedMessage, keywords) {
   return keywords.some((keyword) =>
     normalizedMessage.includes(normalizeText(keyword))
   );
 }
 
+// detectEmergency: identifica frases que sugieren riesgo inmediato.
+// Si devuelve true, el bot responde pidiendo asistencia presencial.
 export function detectEmergency(message) {
   const normalized = normalizeText(message);
   return EMERGENCY_KEYWORDS.some((keyword) => normalized.includes(keyword));
@@ -436,6 +456,9 @@ export function getIntentById(intentId) {
   return [...HELP_INTENTS, ...WELLNESS_INTENTS].find((intent) => intent.id === intentId);
 }
 
+// buildResponseFromIntent: empaqueta la respuesta final que se mostrara
+// en la UI. Incluye texto, posibles acciones rapidas y un disclaimer
+// cuando la categoria es wellness para recordar limites de uso.
 export function buildResponseFromIntent(intent) {
   if (!intent) return { text: FALLBACK_HELP.text, suggestions: FALLBACK_HELP.suggestions };
   return {
@@ -446,10 +469,18 @@ export function buildResponseFromIntent(intent) {
   };
 }
 
+// getBotResponse: flujo principal del bot.
+// Orden de operaciones y razones:
+// 1) Mensaje vacio -> sugerencias por categoria.
+// 2) Saludos / quien eres / gracias -> respuestas cortas y utiles.
+// 3) Emergencia -> prioritaria, pedir ayuda presencial.
+// 4) Matching de intents por keywords -> elegir la mejor puntuacion.
+// 5) Si no hay coincidencias, devolver fallback apropiado.
 export function getBotResponse({ message, category }) {
   const normalized = normalizeText(message);
   if (!normalized) return category === "wellness" ? FALLBACK_WELLNESS : FALLBACK_HELP;
 
+  // Respuestas humanas y amables para interacciones basicas.
   if (includesAny(normalized, GREETING_KEYWORDS)) {
     return {
       text: "Hola, soy IHSchat. Puedo guiarte por la app o darte consejos simples de bienestar.",
@@ -471,6 +502,7 @@ export function getBotResponse({ message, category }) {
     };
   }
 
+  // Emergencias: notificar con claridad y mostrar disclaimer.
   if (detectEmergency(normalized)) {
     return {
       text: "Lo siento, esto suena urgente. Busca atencion medica inmediata o emergencias locales.",
@@ -478,6 +510,7 @@ export function getBotResponse({ message, category }) {
     };
   }
 
+  // Buscamos la mejor intent basada en las keywords
   const intents = category === "wellness" ? WELLNESS_INTENTS : HELP_INTENTS;
   let bestIntent = null;
   let bestScore = 0;
@@ -490,6 +523,7 @@ export function getBotResponse({ message, category }) {
     }
   });
 
+  // Si no hay matches, devolvemos fallback contextual.
   if (!bestIntent || bestScore === 0) {
     return category === "wellness" ? FALLBACK_WELLNESS : FALLBACK_HELP;
   }

@@ -66,10 +66,18 @@ export default function Profile() {
         </div>
       </Card>
 
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={handleExport}>Exportar datos (JSON)</Button>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>Volver al panel</Button>
-        <Button variant="danger" onClick={handleDelete}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button onClick={handleExport} className="w-full sm:w-auto">
+          Exportar datos (JSON)
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/dashboard")}
+          className="w-full sm:w-auto"
+        >
+          Volver al panel
+        </Button>
+        <Button variant="danger" onClick={handleDelete} className="w-full sm:w-auto">
           Eliminar cuenta (simulado)
         </Button>
       </div>

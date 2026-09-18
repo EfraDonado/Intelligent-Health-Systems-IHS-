@@ -22,7 +22,7 @@ export default function Input({
       <input
         id={inputId}
         className={cx(
-          "w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent/60 focus:outline-none",
+          "min-h-[40px] w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent/60 focus:outline-none",
           error && "border-rose-400/70"
         )}
         aria-invalid={Boolean(error)}

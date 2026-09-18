@@ -47,7 +47,7 @@ export default function ReadingsChart({ readings, metric = "hr" }) {
   }
 
   return (
-    <Card className="h-[260px]">
+    <Card className="h-[220px] md:h-[260px]">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="rgba(148, 163, 184, 0.25)" strokeDasharray="4" />

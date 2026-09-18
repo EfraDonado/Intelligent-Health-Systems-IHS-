@@ -119,9 +119,9 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 md:bottom-6 md:right-6">
+    <div className="fixed bottom-24 left-4 right-4 z-50 md:bottom-6 md:left-auto md:right-6">
       {open && (
-        <div className="mb-3 w-[340px] overflow-hidden rounded-2xl border border-ink/10 bg-panel shadow-soft md:w-[380px]">
+        <div className="mb-3 w-full overflow-hidden rounded-2xl border border-ink/10 bg-panel shadow-soft md:w-[380px]">
           <div className="flex items-center justify-between border-b border-ink/10 bg-ink/5 px-4 py-3">
             <div className="flex items-center gap-2">
               <Badge variant="info">IHSchat</Badge>
@@ -176,7 +176,7 @@ export default function ChatbotWidget() {
           </div>
 
           {/* Conversacion: mensajes del usuario y del bot. */}
-          <div className="max-h-[280px] space-y-3 overflow-y-auto border-y border-ink/10 bg-white/70 px-4 py-3">
+          <div className="max-h-[220px] space-y-3 overflow-y-auto border-y border-ink/10 bg-white/70 px-4 py-3 sm:max-h-[280px]">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -247,7 +247,7 @@ export default function ChatbotWidget() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
@@ -260,7 +260,7 @@ export default function ChatbotWidget() {
                 placeholder="Escribe tu duda aqui"
                 className="flex-1 rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent/60 focus:outline-none"
               />
-              <Button size="sm" onClick={() => handleSend(input)}>
+              <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSend(input)}>
                 Enviar
               </Button>
             </div>

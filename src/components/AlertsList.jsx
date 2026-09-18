@@ -22,7 +22,10 @@ export default function AlertsList({ alerts, onMarkReviewed, readOnly = false })
   return (
     <div className="grid gap-3">
       {alerts.map((alert) => (
-        <Card key={alert.id} className="flex flex-wrap items-center gap-4">
+        <Card
+          key={alert.id}
+          className="flex flex-col gap-3 md:flex-row md:items-center"
+        >
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-ink">
@@ -43,13 +46,14 @@ export default function AlertsList({ alerts, onMarkReviewed, readOnly = false })
                 : `Valor ${alert.value} | Rango ${alert.min}-${alert.max}`}
             </p>
           </div>
-          <div className="text-xs text-muted">
+          <div className="text-xs text-muted md:text-right">
             {formatDateTime(alert.timestampISO)}
           </div>
           {alert.status === "new" && !readOnly && (
             <Button
               variant="outline"
               size="sm"
+              className="w-full md:w-auto"
               onClick={() => onMarkReviewed(alert.id)}
             >
               Marcar revisada

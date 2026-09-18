@@ -146,37 +146,46 @@ export default function Dashboard() {
 
       {reminder.due && (
         <Card className="border-accent/25 bg-accent/5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-ink">Recordatorio suave</p>
               <p className="text-sm text-muted">
                 {reminder.message || "Ya toca registrar una lectura nueva."}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => source.acknowledgeReminder()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => source.acknowledgeReminder()}
+            >
               Ya lo vi
             </Button>
           </div>
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4">
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="Ultima lectura"
           value={latestReading ? `${latestReading.hr ?? "-"} bpm` : "Sin datos"}
           hint={latestReading ? `Temp ${latestReading.temp ?? "-"} C · SpO2 ${latestReading.spo2 ?? "-"}%` : "Aun no hay lecturas"}
         />
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="Temperatura"
           value={latestReading?.temp !== null && latestReading?.temp !== undefined ? `${latestReading.temp} C` : "-"}
           hint={latestReading ? `Actualizado ${formatDateTime(latestReading.timestampISO)}` : ""}
         />
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="SpO2"
           value={latestReading?.spo2 !== null && latestReading?.spo2 !== undefined ? `${latestReading.spo2}%` : "-"}
           hint={latestReading?.spo2 !== null && latestReading?.spo2 !== undefined ? `Minimo sugerido ${thresholds.spo2Min}%` : "La lectura aun no trae oxigenacion"}
         />
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="RR estimada"
           value={latestReading?.rr !== null && latestReading?.rr !== undefined ? `${latestReading.rr} rpm` : "No disponible"}
           hint="En modo API puede venir vacia sin romper la vista"
@@ -218,11 +227,13 @@ export default function Dashboard() {
         onModeChange={(nextMode) => source.setMode(nextMode)}
       />
 
-      <div className="flex flex-wrap gap-3">
-        <Button variant="outline" onClick={handleLoadDemo}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button variant="outline" onClick={handleLoadDemo} className="w-full sm:w-auto">
           Cargar datos demo
         </Button>
-        <Button variant="ghost" onClick={() => navigate("/manual")}>Abrir manual</Button>
+        <Button variant="ghost" onClick={() => navigate("/manual")} className="w-full sm:w-auto">
+          Abrir manual
+        </Button>
       </div>
 
       <SectionTitle
@@ -277,8 +288,10 @@ export default function Dashboard() {
             />
           </label>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleReminderSave}>Guardar recordatorio</Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button onClick={handleReminderSave} className="w-full sm:w-auto">
+            Guardar recordatorio
+          </Button>
           <p className="text-xs text-muted">
             Si se cumple el tiempo, veras una banda interna para recordarte la lectura.
           </p>

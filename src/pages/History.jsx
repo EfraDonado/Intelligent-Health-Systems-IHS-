@@ -62,24 +62,26 @@ export default function History() {
 
       <div className="card-surface space-y-4 p-4">
         <DateRangeFilter start={range.start} end={range.end} onChange={setRange} />
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm text-muted">Metrica</label>
-          <select
-            value={metric}
-            onChange={(event) => setMetric(event.target.value)}
-            className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
-          >
-            {METRICS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-muted">Metrica</label>
+            <select
+              value={metric}
+              onChange={(event) => setMetric(event.target.value)}
+              className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm text-ink"
+            >
+              {METRICS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row">
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="w-full sm:w-auto">
               Exportar CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExportJSON}>
+            <Button variant="outline" size="sm" onClick={handleExportJSON} className="w-full sm:w-auto">
               Exportar JSON
             </Button>
           </div>

@@ -113,8 +113,8 @@ export default function Thresholds() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit">Guardar cambios</Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button type="submit" className="w-full sm:w-auto">Guardar cambios</Button>
           {message && <p className="text-xs text-accent">{message}</p>}
           {values.updatedAt && (
             <p className="text-xs text-muted">

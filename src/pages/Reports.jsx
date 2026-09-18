@@ -104,32 +104,38 @@ export default function Reports() {
 
       <div className="card-surface space-y-4 p-4">
         <DateRangeFilter start={range.start} end={range.end} onChange={setRange} />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleGeneratePDF}>Generar PDF</Button>
-          <Button variant="outline" onClick={handleShare}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button onClick={handleGeneratePDF} className="w-full sm:w-auto">
+            Generar PDF
+          </Button>
+          <Button variant="outline" onClick={handleShare} className="w-full sm:w-auto">
             Compartir
           </Button>
           {message && <p className="text-xs text-accent">{message}</p>}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4">
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="Alertas en periodo"
           value={reportData.alertCount}
           hint="Incluye nuevas, revisadas y de tendencia"
         />
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="HR promedio"
           value={reportData.stats.hr.avg !== null ? `${reportData.stats.hr.avg.toFixed(0)} bpm` : "-"}
           hint="Rango total del periodo"
         />
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="Temp promedio"
           value={reportData.stats.temp.avg !== null ? `${reportData.stats.temp.avg.toFixed(1)} C` : "-"}
           hint="Rango total del periodo"
         />
         <StatCard
+          className="min-w-[220px] md:min-w-0"
           label="SpO2 promedio"
           value={reportData.stats.spo2.avg !== null ? `${reportData.stats.spo2.avg.toFixed(0)}%` : "-"}
           hint={reportData.stats.rr.avg !== null ? `RR promedio: ${reportData.stats.rr.avg.toFixed(0)} rpm` : "RR no disponible en este periodo"}

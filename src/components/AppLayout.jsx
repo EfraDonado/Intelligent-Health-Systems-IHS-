@@ -105,21 +105,26 @@ export default function AppLayout() {
           </aside>
 
           <div className="flex min-h-screen flex-1 flex-col">
-            <header className="flex items-center justify-between border-b border-ink/10 bg-panel/95 px-4 py-4 md:px-8">
+            <header className="flex flex-col gap-3 border-b border-ink/10 bg-panel/95 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-8">
               <div>
                 <p className="text-xs uppercase text-muted">IHS</p>
-                <p className="text-[11px] text-muted">
+                <p className="text-[11px] text-muted sm:text-xs">
                   Intelligent Health Systems
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="text-sm text-ink/80">
                   {currentUser?.name || "Invitado"}
                 </span>
                 {currentUser?.email === DEMO_EMAIL && (
                   <Badge variant="info">Demo</Badge>
                 )}
-                <Button variant="subtle" size="sm" onClick={handleLogout}>
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={handleLogout}
+                >
                   Cerrar sesion
                 </Button>
               </div>
@@ -129,16 +134,16 @@ export default function AppLayout() {
               <Outlet />
             </main>
 
-            <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-ink/10 bg-panel/98 px-4 py-2 md:hidden">
-              <div className="flex items-center justify-between">
+            <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-ink/10 bg-panel/98 px-4 py-2.5 md:hidden">
+              <div className="grid grid-cols-4 gap-2">
                 {navItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     className={({ isActive }) =>
                       cx(
-                        "flex flex-col items-center gap-1 text-[11px]",
-                        isActive ? "text-ink" : "text-ink/60"
+                        "flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[10px]",
+                        isActive ? "bg-ink/5 text-ink" : "text-ink/60"
                       )
                     }
                   >

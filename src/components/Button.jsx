@@ -1,7 +1,7 @@
 import { cx } from "../utils/classNames";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg text-sm font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-60 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]";
+  "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg text-sm font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-60 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]";
 
 const variants = {
   primary: "bg-accent text-white hover:bg-accent/90",
